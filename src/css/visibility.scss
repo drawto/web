@@ -1,0 +1,8 @@
+body.desktop {
+  .q-focusable:focus, .q-manual-focusable--focused, .q-hoverable:hover {
+    > .q-focus-helper {
+      background: currentColor;
+      opacity: .05;
+    }
+  }
+}
