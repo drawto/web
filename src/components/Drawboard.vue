@@ -10,6 +10,9 @@ const { tool } = storeToRefs(drawStore)
 const toolCursor = ref<string>('pointer')
 const canvas = ref<HTMLElement | null>(null)
 let   p: p5
+// Use p5.Graphics to store snapshots
+// and avoid lags when drawing
+let   pg: p5.Graphics
 
 function getCanvasDimensions () {
   const defaultDimensions = { width: 0, height: 0 }
@@ -20,6 +23,7 @@ function getCanvasDimensions () {
 function p5Setup () {
   const dimensions = getCanvasDimensions()
   p.createCanvas(dimensions.width, dimensions.height)
+  pg = p.createGraphics(p.width, p.height)
 }
 
 function p5Draw () {
@@ -27,20 +31,28 @@ function p5Draw () {
     return
   }
 
-  p.stroke(tool.value.color)
-  p.strokeWeight(tool.value.size)
-
   const cursorOffset = tool.value.size / 2
   const mouseX = p.mouseX + cursorOffset
   const mouseY = p.mouseY + cursorOffset
   const pmouseX = p.pmouseX + cursorOffset
   const pmouseY = p.pmouseY + cursorOffset
 
-  p.line(mouseX, mouseY, pmouseX, pmouseY)
+  const drawToGraphics = ( graphics: p5 | p5.Graphics ) => {
+    graphics.stroke(tool.value.color)
+    graphics.strokeWeight(tool.value.size)
+    graphics.line(mouseX, mouseY, pmouseX, pmouseY)
+  }
+
+  drawToGraphics(p)
+  drawToGraphics(pg)
 }
 
 function p5PushSnapshot () {
-  drawStore.pushSnapshot(p.get())
+  try {
+    drawStore.pushSnapshot(pg.get())
+  } catch (e) {
+    console.error('Failed to push snapshot', e)
+  }
 }
 
 function p5DrawCurrentSnapshot () {
@@ -62,7 +74,7 @@ function p5RefreshEraseMode () {
 }
 
 function p5MouseToggle ( e: MouseEvent ) {
-  if (e.target !== canvas.value?.querySelector('canvas')) {
+  if (e.target !== canvas.value?.querySelector('canvas.p5Canvas')) {
     return
   }
   p5PushSnapshot()
@@ -86,6 +98,7 @@ onMounted(() => {
     p5PushSnapshot()
     const dimensions = getCanvasDimensions()
     p.resizeCanvas(dimensions.width, dimensions.height)
+    pg?.resizeCanvas(dimensions.width, dimensions.height)
     p5DrawCurrentSnapshot()
   }
 
