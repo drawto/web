@@ -241,6 +241,11 @@
   "resolved" "https://registry.npmjs.org/@types/node/-/node-12.20.55.tgz"
   "version" "12.20.55"
 
+"@types/p5@^1.7.6":
+  "integrity" "sha512-6pLTOo0V3N5jZb5nTwjiv3lPHLK3Z/TjbhQUj8CTWXocUk1Z/f6OHTp3Pcwi1BhWnf5gqKUcyEb1gP0KIJuQgw=="
+  "resolved" "https://registry.npmjs.org/@types/p5/-/p5-1.7.6.tgz"
+  "version" "1.7.6"
+
 "@types/qs@*":
   "integrity" "sha512-3Gnx08Ns1sEoCrWssEgTSJs/rsT2vhGP+Ja9cnnk9k4ALxinORlQneLXFeFKOTJMOeZUFD1s7w+w2AphTpvzZw=="
   "resolved" "https://registry.npmjs.org/@types/qs/-/qs-6.9.10.tgz"
@@ -1476,7 +1481,7 @@
   "resolved" "https://registry.npmjs.org/kolorist/-/kolorist-1.8.0.tgz"
   "version" "1.8.0"
 
-"konva@^9.2.3", "konva@>7":
+"konva@^9.2.3":
   "integrity" "sha512-oQ6VQ6kUL9IlhOGuEKKhxqnv6g/t8jZpVuWahQQ6hCqAsO8Ydi1zFGv7ef4EOq5GoPNq/d6Fyj/3i5Y/a5NooA=="
   "resolved" "https://registry.npmjs.org/konva/-/konva-9.2.3.tgz"
   "version" "9.2.3"
@@ -1730,6 +1735,11 @@
   "integrity" "sha512-D2FR03Vir7FIu45XBY20mTb+/ZSWB00sjU9jdQXt83gDrI4Ztz5Fs7/yy74g2N5SVQY4xY1qDr4rNddwYRVX0g=="
   "resolved" "https://registry.npmjs.org/os-tmpdir/-/os-tmpdir-1.0.2.tgz"
   "version" "1.0.2"
+
+"p5@^1.9.0":
+  "integrity" "sha512-+5/hz0ZokCDf7BMMAeemE7FIo7gFZK7ImL62acHLXZwerGjqj+171bnaAWj4aCFCx6fwysAr2U7/AKuPyPhehA=="
+  "resolved" "https://registry.npmjs.org/p5/-/p5-1.9.0.tgz"
+  "version" "1.9.0"
 
 "param-case@^2.1.1":
   "integrity" "sha512-eQE845L6ot89sk2N8liD8HAuH4ca6Vvr7VWAWwt7+kvvG5aBcPmmphQ68JsEG2qa9n1TykS2DLeMt363AAH8/w=="
@@ -2339,11 +2349,6 @@
     "@intlify/core-base" "9.8.0"
     "@intlify/shared" "9.8.0"
     "@vue/devtools-api" "^6.5.0"
-
-"vue-konva@^3.0.2":
-  "integrity" "sha512-FNWKtPPVDihNuQcq7F4GzuVPkPaEfg8lnWezpRqgiC2VetdvONOiYOFD800jNL5kt/lEYnSOYvhqqdTPbv2c8w=="
-  "resolved" "https://registry.npmjs.org/vue-konva/-/vue-konva-3.0.2.tgz"
-  "version" "3.0.2"
 
 "vue-router@^4.0.0", "vue-router@^4.0.12":
   "integrity" "sha512-DIUpKcyg4+PTQKfFPX88UWhlagBEBEfJ5A8XDXRJLUnZOvcpMF8o/dnL90vpVkGaPbjvXazV/rC1qBKrZlFugw=="

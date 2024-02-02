@@ -4,7 +4,7 @@ import { storeToRefs } from 'pinia'
 import {
   ionArrowRedoCircleOutline,
   ionArrowUndoCircleOutline,
-  ionColorPaletteOutline, ionTrashOutline
+  ionColorPaletteOutline,
 } from '@quasar/extras/ionicons-v7'
 import { DrawToolType } from 'components/models'
 
@@ -73,15 +73,6 @@ const tools = [
           :icon="ionArrowRedoCircleOutline"
         />
       </q-btn-group>
-      <div class="flex justify-end q-mt-sm">
-        <q-btn
-          color="primary"
-          :label="$t('clear')"
-          @click="drawStore.clear()"
-          :disable="!drawStore.canClear"
-          :icon="ionTrashOutline"
-        />
-      </div>
     </div>
   </div>
 </template>

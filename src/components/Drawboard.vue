@@ -1,120 +1,113 @@
 <script setup lang="ts">
-import { getCurrentInstance, onMounted, onUnmounted, ref, watch } from 'vue'
-import Konva from 'konva'
+import { onMounted, onUnmounted, ref, watch } from 'vue'
 import { createCursorCircle } from 'drawers/cursor'
-import { createLine } from 'drawers/line'
-import { useDrawStore } from 'stores/draw'
+import { drawEventBus, useDrawStore } from 'stores/draw'
 import { storeToRefs } from 'pinia'
-import { Dimensions } from 'components/models'
-import { saveToDataUrl } from 'composables/drawboardExport'
+import p5 from 'p5'
 
-const instance = getCurrentInstance()
 const drawStore = useDrawStore()
-const { tool, canvasState, duringPainting } = storeToRefs(drawStore)
+const { tool } = storeToRefs(drawStore)
 const toolCursor = ref<string>('pointer')
-const stageConfig = ref<any>({
-  ...getParentElDimensions()
-})
+const canvas = ref<HTMLElement | null>(null)
+let   p: p5
 
-function onMouseUp ( e: Konva.KonvaEventObject<MouseEvent> ) {
-  duringPainting.value = false
-  drawStore.createSnapshot()
-}
-
-function onMouseDown ( e: Konva.KonvaEventObject<MouseEvent> ) {
-  duringPainting.value = true
-  const newLine = createLine(e, tool.value)
-  if (!newLine) return
-  drawStore.createSnapshot()
-  canvasState.value.lines.push(newLine)
-}
-
-function onMouseMove ( e: Konva.KonvaEventObject<MouseEvent> ) {
-  if (!duringPainting.value) {
-    return
-  }
-  const newLine = createLine(e, tool.value)
-  if (!newLine) return
-
-  const lines = canvasState.value.lines
-  const lastLine = lines[lines.length - 1]
-  lastLine.points = lastLine.points.concat(newLine.points)
-  lines.splice(lines.length - 1, 1, lastLine)
-}
-
-function getParentElDimensions () {
+function getCanvasDimensions () {
   const defaultDimensions = { width: 0, height: 0 }
-  const { width, height } = instance?.parent?.vnode?.el?.getBoundingClientRect() || defaultDimensions
+  const { width, height } = canvas.value?.getBoundingClientRect() || defaultDimensions
   return { width, height }
 }
 
-async function updateToolCursor () {
+function p5Setup () {
+  const dimensions = getCanvasDimensions()
+  p.createCanvas(dimensions.width, dimensions.height)
+}
+
+function p5Draw () {
+  if (! p.mouseIsPressed) {
+    return
+  }
+
+  p.stroke(tool.value.color)
+  p.strokeWeight(tool.value.size)
+
+  const cursorOffset = tool.value.size / 2
+  const mouseX = p.mouseX + cursorOffset
+  const mouseY = p.mouseY + cursorOffset
+  const pmouseX = p.pmouseX + cursorOffset
+  const pmouseY = p.pmouseY + cursorOffset
+
+  p.line(mouseX, mouseY, pmouseX, pmouseY)
+}
+
+function p5PushSnapshot () {
+  drawStore.pushSnapshot(p.get())
+}
+
+function p5DrawCurrentSnapshot () {
+  p.clear()
+  p.image(drawStore.currentSnapshot, 0, 0)
+  // We need to disable and enable erase mode again
+  // because for some reason after drawing an image
+  // erase mode is not working
+  p.noErase()
+  p5RefreshEraseMode()
+}
+
+function p5RefreshEraseMode () {
+  if (tool.value.type === 'eraser') {
+    p?.erase()
+  } else {
+    p?.noErase()
+  }
+}
+
+function p5MouseToggle ( e: MouseEvent ) {
+  if (e.target !== canvas.value?.querySelector('canvas')) {
+    return
+  }
+  p5PushSnapshot()
+}
+
+async function refreshCanvasCursor () {
   const circle = await createCursorCircle(tool.value.size, tool.value.color)
   const url = URL.createObjectURL(circle)
   toolCursor.value = `url(${url}) 2 2, auto`
 }
 
 onMounted(() => {
-  const isDimensionsEqual = ( a: Dimensions, b: Dimensions ) => {
-    return a.width === b.width && a.height === b.height
-  }
-  const updateStageConfigDimensions = ( e: any ) => {
-    const dimensions = getParentElDimensions()
-    Object.keys(dimensions).forEach(key => {
-      stageConfig.value[key] = dimensions[key as keyof typeof dimensions]
-    })
+  p = new p5(( _p ) => {
+    _p.setup = p5Setup
+    _p.draw = p5Draw
+    _p.mousePressed = p5MouseToggle
+    _p.mouseReleased = p5MouseToggle
+  }, canvas.value as HTMLElement)
 
-    if (!e.withOg) {
-      return;
-    }
-
-    if (!isDimensionsEqual(canvasState.value.originalDimensions, dimensions)) {
-      const url = saveToDataUrl(canvasState.value)
-      if (url) {
-        canvasState.value.scaledBackground = url
-        drawStore.resetCanvasState()
-      }
-    }
-
-    canvasState.value.originalDimensions = dimensions
+  const onResize = () => {
+    p5PushSnapshot()
+    const dimensions = getCanvasDimensions()
+    p.resizeCanvas(dimensions.width, dimensions.height)
+    p5DrawCurrentSnapshot()
   }
 
-  updateStageConfigDimensions({ withOg: true })
-
-  window.addEventListener('resize', updateStageConfigDimensions)
-
+  window.addEventListener('resize', onResize)
   onUnmounted(() => {
-    window.removeEventListener('resize', updateStageConfigDimensions)
+    window.removeEventListener('resize', onResize)
   })
 })
 
-watch(tool, updateToolCursor, { immediate: true, deep: true })
+watch(tool, () => {
+  refreshCanvasCursor()
+
+  p5RefreshEraseMode()
+}, { immediate: true, deep: true })
+
+drawEventBus.on('undo', p5DrawCurrentSnapshot)
+drawEventBus.on('redo', p5DrawCurrentSnapshot)
 </script>
 
 <template>
   <div class="drawboard">
-    <div class="drawboard__canvas-container">
-      <v-stage
-        :config="stageConfig"
-        @mouseup="onMouseUp"
-        @mousedown="onMouseDown"
-        @mousemove="onMouseMove"
-      >
-        <v-layer>
-          <v-line
-            v-for="(line, index) in canvasState.lines"
-            :key="index"
-            :config="line"
-          />
-        </v-layer>
-      </v-stage>
-    </div>
-    <div v-if="canvasState.scaledBackground" class="drawboard__scaled-bg">
-      <img
-        :src="canvasState.scaledBackground"
-        alt=""
-      />
-    </div>
+    <div class="drawboard__canvas" ref="canvas" />
   </div>
 </template>
 
@@ -122,24 +115,11 @@ watch(tool, updateToolCursor, { immediate: true, deep: true })
 .drawboard {
   cursor: v-bind(toolCursor);
   position: relative;
-  &__canvas-container {
+  display: flex;
+  flex-direction: column;
+  &__canvas {
+    flex: 1;
     z-index: 2;
-  }
-  &__scaled-bg {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-    z-index: 1;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    img {
-      object-fit: cover;
-      width: 100%;
-    }
   }
 }
 </style>

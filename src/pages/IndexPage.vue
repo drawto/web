@@ -7,12 +7,12 @@ const drawTime = ref<Date>(new Date)
 </script>
 
 <template>
-  <q-page>
-    <div class="relative-position">
+  <q-page class="flex column">
+    <div class="relative-position flex-fit flex column">
       <div class="absolute-top-left q-pl-sm q-pt-sm z-top">
         <div class="draw-time">{{ beautyAge(drawTime) }}</div>
       </div>
-      <drawboard />
+      <drawboard class="flex-fit" />
     </div>
   </q-page>
 </template>
