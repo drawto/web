@@ -75,7 +75,7 @@ function p5RefreshEraseMode () {
   }
 }
 
-function p5MouseToggle ( e: MouseEvent ) {
+function p5MouseReleased ( e: MouseEvent ) {
   if (e.target !== canvas.value?.querySelector('canvas.p5Canvas')) {
     return
   }
@@ -92,8 +92,7 @@ onMounted(() => {
   p = new p5(( _p ) => {
     _p.setup = p5Setup
     _p.draw = p5Draw
-    _p.mousePressed = p5MouseToggle
-    _p.mouseReleased = p5MouseToggle
+    _p.mouseReleased = p5MouseReleased
   }, canvas.value as HTMLElement)
 
   const onResize = () => {
