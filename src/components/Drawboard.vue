@@ -68,8 +68,10 @@ function p5DrawCurrentSnapshot () {
 function p5RefreshEraseMode () {
   if (tool.value.type === 'eraser') {
     p?.erase()
+    pg?.erase()
   } else {
     p?.noErase()
+    pg?.noErase()
   }
 }
 
