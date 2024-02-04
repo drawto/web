@@ -116,6 +116,8 @@ watch(tool, () => {
 
 drawEventBus.on('undo', p5DrawCurrentSnapshot)
 drawEventBus.on('redo', p5DrawCurrentSnapshot)
+
+defineExpose({ toolCursor })
 </script>
 
 <template>
