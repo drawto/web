@@ -1,12 +1,10 @@
 <script setup lang="ts">
 import Drawboard from 'components/Drawboard.vue'
-import { computed, ref } from 'vue'
+import { ref } from 'vue'
 import { beautyAge } from 'composables/beautyTime'
 
 const drawTime = ref<Date>(new Date)
 const drawboardRef = ref<InstanceType<typeof Drawboard> | null>(null)
-
-const toolCursor = computed(() => drawboardRef.value?.toolCursor || 'pointer')
 </script>
 
 <template>
@@ -23,7 +21,6 @@ const toolCursor = computed(() => drawboardRef.value?.toolCursor || 'pointer')
 <style lang="scss">
 .draw-time-container {
   transition: opacity .3s;
-  cursor: v-bind(toolCursor);
   &:hover {
     opacity: 0;
   }

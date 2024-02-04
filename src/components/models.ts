@@ -1,6 +1,11 @@
-export interface DrawTool {
-  type: DrawToolType;
-  size: number;
-  color: string;
+export type TDrawboardToolKey = 'pencil' | 'eraser'
+export type TDrawboardToolOptions = {
+  key: TDrawboardToolKey
+  size: number
+  color: string
 }
-export type DrawToolType = 'brush' | 'eraser';
+
+export type IDimensions = {
+  width: number
+  height: number
+}

@@ -5,7 +5,7 @@ export default {
   failed: 'Action failed',
   success: 'Action was successful',
   tools: {
-    brush: 'Brush',
+    pencil: 'Pencil',
     eraser: 'Eraser',
     size: 'Size',
     color: 'Color',

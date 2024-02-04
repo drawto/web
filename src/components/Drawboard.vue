@@ -1,143 +1,111 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref, watch } from 'vue'
-import { createCursorCircle } from 'drawers/cursor'
 import { drawEventBus, useDrawStore } from 'stores/draw'
 import { storeToRefs } from 'pinia'
-import p5 from 'p5'
+import { fabric } from 'fabric'
+import { createDrawboardCanvas, setupDrawboardTool } from 'composables/drawboardCanvas'
+import { IDimensions } from 'components/models'
 
 const drawStore = useDrawStore()
-const { tool } = storeToRefs(drawStore)
-const toolCursor = ref<string>('pointer')
-let   toolCursorOffset = 2.5
-const canvas = ref<HTMLElement | null>(null)
-let   p: p5
-// Use p5.Graphics to store snapshots
-// and avoid lags when drawing
-let   pg: p5.Graphics
+const { toolKey, toolOpts, canUndo, canRedo } = storeToRefs(drawStore)
+const drawboard = ref<HTMLDivElement | null>(null)
+const canvas = ref<HTMLCanvasElement | null>(null)
+let   dCanvas: fabric.Canvas
+let   originalDimensions: { width: number, height: number }
 
-function getCanvasDimensions () {
-  const defaultDimensions = { width: 0, height: 0 }
-  const { width, height } = canvas.value?.getBoundingClientRect() || defaultDimensions
+function getDrawboardDimensions () {
+  const { width, height } = drawboard.value?.getBoundingClientRect() || { width: 0, height: 0 }
   return { width, height }
 }
 
-function p5Setup () {
-  const dimensions = getCanvasDimensions()
-  p.createCanvas(dimensions.width, dimensions.height)
-  pg = p.createGraphics(p.width, p.height)
+function getCanvasDimensions () {
+  const dimensions = getDrawboardDimensions()
+  dimensions.height = window.innerHeight
+  return dimensions
 }
 
-function p5Draw () {
-  if (! p.mouseIsPressed) {
-    return
+function updateHistoryButtons () {
+  canUndo.value = dCanvas.history.canUndo()
+  canRedo.value = dCanvas.history.canRedo()
+}
+
+function setupHistoryButtonChanges () {
+  const events = ['undo', 'redo', 'append']
+  events.forEach(event => {
+    dCanvas.on(`history:${event}`, updateHistoryButtons)
+  })
+  onUnmounted(() => {
+    events.forEach(event => {
+      dCanvas.off(`history:${event}`, updateHistoryButtons)
+    })
+  })
+}
+
+function setupResizeObserver () {
+  const onResize = () => fitToDimensions(getCanvasDimensions())
+  window.addEventListener('resize', onResize)
+  onUnmounted(() => window.removeEventListener('resize', onResize))
+}
+
+function fitToDimensions ( dimensions: IDimensions, _originalDimensions?: IDimensions ) {
+  if (! _originalDimensions) {
+    _originalDimensions = originalDimensions
   }
 
-  const mouseX = p.mouseX + toolCursorOffset
-  const mouseY = p.mouseY + toolCursorOffset
-  const pmouseX = p.pmouseX + toolCursorOffset
-  const pmouseY = p.pmouseY + toolCursorOffset
+  dCanvas.setWidth(dimensions.width)
+  dCanvas.setHeight(dimensions.height)
 
-  const drawToGraphics = ( graphics: p5 | p5.Graphics ) => {
-    graphics.stroke(tool.value.color)
-    graphics.strokeWeight(tool.value.size)
-    graphics.line(mouseX, mouseY, pmouseX, pmouseY)
-  }
+  // Calculate aspect ratios
+  const originalAspectRatio = _originalDimensions.width / _originalDimensions.height;
+  const newAspectRatio = dimensions.width / dimensions.height;
 
-  drawToGraphics(p)
-  drawToGraphics(pg)
-}
+  let zoom
 
-function p5PushSnapshot () {
-  try {
-    drawStore.pushSnapshot(pg.get())
-  } catch (e) {
-    console.error('Failed to push snapshot', e)
-  }
-}
-
-function p5DrawCurrentSnapshot () {
-  p.clear()
-  p.image(drawStore.currentSnapshot, 0, 0)
-  // We need to disable and enable erase mode again
-  // because for some reason after drawing an image
-  // erase mode is not working
-  p.noErase()
-  p5RefreshEraseMode()
-}
-
-function p5RefreshEraseMode () {
-  if (tool.value.type === 'eraser') {
-    p?.erase()
-    pg?.erase()
+  // Compare the aspect ratios to decide whether to fit to width or height
+  if (newAspectRatio > originalAspectRatio) {
+    // Window is wider than the original aspect ratio, fit to height
+    zoom = dimensions.height / _originalDimensions.height;
   } else {
-    p?.noErase()
-    pg?.noErase()
+    // Window is narrower than the original aspect ratio, fit to width
+    zoom = dimensions.width / _originalDimensions.width;
   }
-}
 
-function p5MouseReleased ( e: MouseEvent ) {
-  if (e.target !== canvas.value?.querySelector('canvas.p5Canvas')) {
-    return
+  // Apply zoom only if it has changed
+  if (zoom) {
+    dCanvas.setZoom(zoom);
   }
-  p5PushSnapshot()
-}
 
-async function refreshCanvasCursor () {
-  toolCursorOffset = tool.value.size / 2
-
-  const circle = await createCursorCircle(tool.value.size, tool.value.color)
-  const url = URL.createObjectURL(circle)
-  toolCursor.value = `url(${url}) 2 2, auto`
+  // move to center
+  dCanvas.absolutePan(new fabric.Point(0, 0));
 }
 
 onMounted(() => {
-  p = new p5(( _p ) => {
-    _p.setup = p5Setup
-    _p.draw = p5Draw
-    _p.mouseReleased = p5MouseReleased
-  }, canvas.value as HTMLElement)
+  originalDimensions = getCanvasDimensions()
+  dCanvas = createDrawboardCanvas(canvas.value as HTMLCanvasElement, originalDimensions)
 
-  const onResize = () => {
-    p5PushSnapshot()
-    const dimensions = getCanvasDimensions()
-    p.resizeCanvas(dimensions.width, dimensions.height)
-    pg?.resizeCanvas(dimensions.width, dimensions.height)
-    p5DrawCurrentSnapshot()
-  }
+  setupDrawboardTool(dCanvas, drawStore.toolOpts)
 
-  window.addEventListener('resize', onResize)
-  onUnmounted(() => {
-    window.removeEventListener('resize', onResize)
-  })
+  setupHistoryButtonChanges()
+  setupResizeObserver()
 })
 
-watch(tool, () => {
-  refreshCanvasCursor()
+watch(toolKey, () => setupDrawboardTool(dCanvas, drawStore.toolOpts))
+watch(toolOpts, () => setupDrawboardTool(dCanvas, drawStore.toolOpts))
 
-  p5RefreshEraseMode()
-}, { immediate: true, deep: true })
-
-drawEventBus.on('undo', p5DrawCurrentSnapshot)
-drawEventBus.on('redo', p5DrawCurrentSnapshot)
-
-defineExpose({ toolCursor })
+drawEventBus.on('undo', () => dCanvas?.history.undo())
+drawEventBus.on('redo', () => dCanvas?.history.redo())
 </script>
 
 <template>
-  <div class="drawboard">
-    <div class="drawboard__canvas" ref="canvas" />
+  <div class="drawboard" ref="drawboard">
+    <canvas class="drawboard__canvas" ref="canvas" />
   </div>
 </template>
 
 <style scoped lang="scss">
 .drawboard {
-  cursor: v-bind(toolCursor);
   position: relative;
   display: flex;
   flex-direction: column;
-  &__canvas {
-    flex: 1;
-    z-index: 2;
-  }
 }
 </style>

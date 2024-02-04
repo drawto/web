@@ -51,6 +51,7 @@ module.exports = configure(function (/* ctx */) {
       alias: {
         drawers: path.resolve(__dirname, './src/drawers'),
         composables: path.resolve(__dirname, './src/composables'),
+        fabricPlugins: path.resolve(__dirname, './src/fabricPlugins'),
       },
 
       target: {

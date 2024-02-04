@@ -13,6 +13,7 @@
       "stores/*": ["src/stores/*"],
       "drawers/*": ["src/drawers/*"],
       "composables/*": ["src/composables/*"],
+      "fabricPlugins/*": ["src/fabricPlugins/*"],
     }
   }
 }

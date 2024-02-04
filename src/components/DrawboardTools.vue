@@ -6,50 +6,52 @@ import {
   ionArrowUndoCircleOutline,
   ionColorPaletteOutline,
 } from '@quasar/extras/ionicons-v7'
-import { DrawToolType } from 'components/models'
+import drawboardTools from 'composables/drawboardTools'
+import { TDrawboardToolKey } from 'components/models'
 
 const drawStore = useDrawStore()
-const { tool } = storeToRefs(drawStore)
+const { toolKey, toolSize, toolColor } = storeToRefs(drawStore)
+const dToolKeys = Object.keys(drawboardTools)
 
-const tools = [
-  ['brush', 'svguse:icons.svg#brush'],
-  ['eraser', 'svguse:icons.svg#eraser']
-]
+const toolIconsMap = {
+  pencil: 'svguse:icons.svg#brush',
+  eraser: 'svguse:icons.svg#eraser'
+}
 </script>
 
 <template>
   <div class="drawboard-tools">
     <q-list>
       <q-item
-        v-for="([type, icon]) in tools"
-        :key="type"
+        v-for="tKey in dToolKeys"
+        :key="tKey"
         clickable
-        :active="tool.type === type"
-        @click="tool.type = type as DrawToolType"
+        :active="toolKey === tKey"
+        @click="toolKey = tKey as TDrawboardToolKey"
       >
         <q-item-section avatar>
-          <q-icon :name="icon" />
+          <q-icon :name="toolIconsMap[tKey]" />
         </q-item-section>
         <q-item-section>
           <q-item-label>
-            {{ $t(`tools.${type}`) }}
+            {{ $t(`tools.${tKey}`) }}
           </q-item-label>
         </q-item-section>
       </q-item>
       <div class="q-px-md q-mt-sm">
-        {{ $t('tools.size') }}: {{ tool.size }}px
-        <q-slider v-model="tool.size" :min="1" :max="100" />
+        {{ $t('tools.size') }}: {{ toolSize }}px
+        <q-slider v-model="toolSize" :min="1" :max="100" />
       </div>
       <div class="q-px-md">
         {{ $t('tools.color') }}:
         <q-input
-          v-model="tool.color"
+          v-model="toolColor"
           dense
         >
           <template #append>
             <q-icon :name="ionColorPaletteOutline" class="cursor-pointer">
               <q-popup-proxy cover transition-show="scale" transition-hide="scale">
-                <q-color v-model="tool.color" format-model="hex" />
+                <q-color v-model="toolColor" format-model="hex" />
               </q-popup-proxy>
             </q-icon>
           </template>
@@ -61,15 +63,15 @@ const tools = [
         <q-btn
           color="primary"
           :label="$t('undo')"
-          @click="drawStore.undo()"
-          :disable="!drawStore.canUndo"
+          @click="drawStore.undo"
+          :disabled="!drawStore.canUndo"
           :icon="ionArrowUndoCircleOutline"
         />
         <q-btn
           color="primary"
           :label="$t('redo')"
-          @click="drawStore.redo()"
-          :disable="!drawStore.canRedo"
+          @click="drawStore.redo"
+          :disabled="!drawStore.canRedo"
           :icon="ionArrowRedoCircleOutline"
         />
       </q-btn-group>
