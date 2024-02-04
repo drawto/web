@@ -8,6 +8,7 @@ import p5 from 'p5'
 const drawStore = useDrawStore()
 const { tool } = storeToRefs(drawStore)
 const toolCursor = ref<string>('pointer')
+let   toolCursorOffset = 2.5
 const canvas = ref<HTMLElement | null>(null)
 let   p: p5
 // Use p5.Graphics to store snapshots
@@ -31,11 +32,10 @@ function p5Draw () {
     return
   }
 
-  const cursorOffset = tool.value.size / 2
-  const mouseX = p.mouseX + cursorOffset
-  const mouseY = p.mouseY + cursorOffset
-  const pmouseX = p.pmouseX + cursorOffset
-  const pmouseY = p.pmouseY + cursorOffset
+  const mouseX = p.mouseX + toolCursorOffset
+  const mouseY = p.mouseY + toolCursorOffset
+  const pmouseX = p.pmouseX + toolCursorOffset
+  const pmouseY = p.pmouseY + toolCursorOffset
 
   const drawToGraphics = ( graphics: p5 | p5.Graphics ) => {
     graphics.stroke(tool.value.color)
@@ -83,6 +83,8 @@ function p5MouseReleased ( e: MouseEvent ) {
 }
 
 async function refreshCanvasCursor () {
+  toolCursorOffset = tool.value.size / 2
+
   const circle = await createCursorCircle(tool.value.size, tool.value.color)
   const url = URL.createObjectURL(circle)
   toolCursor.value = `url(${url}) 2 2, auto`
